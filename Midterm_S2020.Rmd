@@ -1,0 +1,135 @@
+---
+title: |
+    | STAT 506: Midterm Exam
+    | Name:
+output: pdf_document 
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(readr)
+library(dplyr)
+library(arm)
+library(rpart)
+library(rpart.plot)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Please turn in the exam to GitHub and include the R Markdown code, a Word or MD or PDF file with output. You are welcome to turn in code and output for each question separately. Please verify that all of the code has compiled and the graphics look like you think they should on your files, you are welcome to upload image files directly if they look distorted in the Word or PDF file.
+
+While the exam is open book, meaning you are free to use any resources from class, this is strictly an individual endeavor and **you should not discuss the problems with anyone outside the course instructor including group mates or class members.** The questions marked with an * denote in-class type questions, however, you are welcome to use any resources, but please include references and/or acknowledgments of the sources you have used.
+
+For full credit, include your code and graphics for each question and create neat output by using options like `kable()` for tables and writing results in line with R commands.
+
+# 1. (ANOVA: 20 points)
+This question will focus on ANOVA models using a dataset with arrival delays from airplanes leaving Bozeman. The dataset is filtered to include the following destinations: Denver (DEN), Minneapolis (MSP), Chicago (ORD), and Salt Lake City (SLC). Flights that are cancelled have been removed from the dataset.
+
+```{r}
+planes <-  read_csv('http://math.montana.edu/ahoegh/Data/planes.csv')
+planes <- planes %>% filter(Dest %in% c('DEN','MSP','ORD', 'SLC')) %>%
+    filter(Cancelled == 0) %>% mutate(Day_factor = factor(DayOfWeek))
+```
+
+\newpage
+
+### a.* (6 points)
+For each of the models included below, clearly define each parameter in the model and provide an evidence and size statement for each parameter.
+```{r}
+lm_dest <- lm(ArrDelay ~ Dest - 1, data = planes)
+display(lm_dest)
+```
+
+\vfill
+
+```{r}
+lm_day <- lm(ArrDelay ~ DayOfWeek, data = planes)
+display(lm_day)
+```
+
+\vfill
+
+```{r}
+lm_day2 <- lm(ArrDelay ~ Day_factor, data = planes)
+display(lm_day2)
+```
+
+\newpage
+
+### b. (9 points)
+
+Explore whether the Bozeman snowy season and destination impact the arrival delay. For season, consider the snowy season to be the following months ( 11, 12, 1, 2, 3) and non-snowymonths. Justify whether an interaction is appropriate. Define all model parameters and provide evidence and size statements. (you don't need to check model assumptions for this model)
+
+### c. (5 points)
+
+For the model that you fit in the previous question, state the model assumptions. Then provide a sentence or two for each assumption detailing whether you are satisfied that the assumption is reasonable in this case.
+
+# 2. (Predictive Modeling: 20 points)
+This question will focus on predictive models using a dataset with yelp rankings for businesses in Las Vegas.
+```{r, message=F}
+library(stringr)
+YelpReviews <- read_csv(
+    'http://math.montana.edu/ahoegh/teaching/stat408/datasets/yelp_lasvegas_business.csv') %>% 
+    dplyr::select(name, neighborhood, postal_code, stars, review_count, categories) %>% 
+    mutate(restaurant = str_detect(categories, 'Restaurants'), 
+           shopping = str_detect(categories, 'Shopping'), 
+           health = str_detect(categories, "Health & Medical"), 
+           local_services = str_detect(categories, "Local Services"),
+           automotive = str_detect(categories, "Automotive"),
+           home_services = str_detect(categories, "Home Services"))
+YelpReviews
+```
+
+### a*. (4 points)
+
+Detail a test and training approach and describe why this is necessary in predictive modeling.
+
+### b*. (4 points)
+
+Star rankings for each establishment are rounded to the nearest 1/2 star. Define a loss function and then propose a loss function for comparing predictive models with this dataset.
+
+```{r}
+unique(YelpReviews$stars)
+```
+
+### c*. (4 points)
+
+Interpret the following decision tree.
+```{r}
+tree <- rpart(stars ~ restaurant + review_count, data = YelpReviews)
+rpart.plot(tree)
+```
+
+### d. (2 points)
+Create a test and training test.
+
+### e. (6 points)
+Using your loss function from part b, develop a predictive model that is better than the model in part c. Describe your model in a way that a Las Vegas tourist could understand.
+
+# 3. (Regression: 24 points)
+This question will focus on regression models using a dataset with rankings of wine varieties.
+
+```{r}
+wine <- read_csv('http://www.math.montana.edu/ahoegh/teaching/stat532/data/wine_ratings.csv')
+common_wines <- wine %>% group_by(variety) %>% tally(sort = T) %>% slice(1:8)
+wine <- wine %>% filter(variety %in% common_wines$variety)
+```
+
+### a. (8 points)
+
+Create a series of data visualizations exploring the relationship between points and price, province, and variety. For each figure include an informative caption. For full credit, include informative titles, labels, and potentially annotations.
+
+### b.* (2 points)
+
+Based on the figures created in the previous question, do you have any reservations about fitting a regression model with normal errors?
+
+### c. (8 points)
+Regardless of the results for part b, fit a regression model for points as a function of price and variety. Include evidence and size statements for the model. Show your results graphically.
+
+### d. (2 points)
+Predict the average point rankings for a bottle of a $50 Pinot Noir. Show your results graphically.
+
+### e. (2 points)
+Predict the point rankings for a single bottle of a $50 Pinot Noir. Show your results graphically.
+
+### f.* (2 points)
+How could a hierarchical model be used for different relationship between points and priceas a function of variety or province?
